@@ -1,5 +1,5 @@
 Code for Hierarchical Adaptive networks with Task vectors for Test-Time Adaptation
-- The algorithm (will be added soon) can be intargeted with existing test-time adaptation baselines. by training the backbone. 
+- The algorithm (will be added soon) can be integrated with existing test-time adaptation baselines by training the backbone. 
 
 ## Acknowledgements and thanks to baseline methods
 
