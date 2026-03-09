@@ -4,7 +4,7 @@ Code for Hierarchical Adaptive networks with Task vectors for Test-Time Adaptati
 ## Acknowledgements and thanks to baseline methods
 
 Robustbench (https://github.com/RobustBench/robustbench)
-CoTTA (https://github.com/qinenergy/cotta)
++ CoTTA (https://github.com/qinenergy/cotta)
 TENT (https://github.com/DequanWang/tent)
 SAR (https://github.com/mr-eggplant/SAR)
 EATA (https://github.com/mr-eggplant/EATA)
