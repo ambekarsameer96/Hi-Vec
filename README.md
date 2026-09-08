@@ -1,5 +1,7 @@
 Code for Hierarchical Adaptive networks with Task vectors for Test-Time Adaptation
-- The algorithm (will be added soon) can be integrated with existing test-time adaptation baselines by training the backbone. 
+To train the MRL model, use train_mrl_Cifar_10.py
+
+To adapt the MRL model, follow the instructions from tta_adapt.py, config files for existing baselines and instrctions from STAMP's official repository. 
 
 ## Acknowledgements and thanks to baseline methods
 
@@ -12,4 +14,3 @@ Robustbench (https://github.com/RobustBench/robustbench)
 + OWTTT (https://github.com/Yushu-Li/OWTTT)
 + RoTTA (https://github.com/BIT-DA/RoTTA)
 + STAMP (https://github.com/yuyongcan/STAMP)
-
