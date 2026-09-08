@@ -56,11 +56,11 @@ def trades_loss(model,
                 perturb_steps=10,
                 beta=1.0,
                 distance='l_inf'):
-    # define KL-loss
+    
     criterion_kl = nn.KLDivLoss(size_average=False)
     model.eval()
     batch_size = len(x_natural)
-    # generate adversarial example
+    
     x_adv = x_natural.detach() + 0.001 * torch.randn(x_natural.shape).cuda().detach()
     if distance == 'l_inf':
         for _ in range(perturb_steps):
@@ -76,27 +76,27 @@ def trades_loss(model,
         delta = 0.001 * torch.randn(x_natural.shape).cuda().detach()
         delta = Variable(delta.data, requires_grad=True)
 
-        # Setup optimizers
+        
         optimizer_delta = optim.SGD([delta], lr=epsilon / perturb_steps * 2)
 
         for _ in range(perturb_steps):
             adv = x_natural + delta
 
-            # optimize
+            
             optimizer_delta.zero_grad()
             with torch.enable_grad():
                 loss = (-1) * criterion_kl(F.log_softmax(model(adv), dim=1),
                                            F.softmax(model(x_natural), dim=1))
             loss.backward()
-            # renorming gradient
+            
             grad_norms = delta.grad.view(batch_size, -1).norm(p=2, dim=1)
             delta.grad.div_(grad_norms.view(-1, 1, 1, 1))
-            # avoid nan or inf if gradient is 0
+            
             if (grad_norms == 0).any():
                 delta.grad[grad_norms == 0] = torch.randn_like(delta.grad[grad_norms == 0])
             optimizer_delta.step()
 
-            # projection
+            
             delta.data.add_(x_natural)
             delta.data.clamp_(0, 1).sub_(x_natural)
             delta.data.renorm_(p=2, dim=0, maxnorm=epsilon)
@@ -106,9 +106,9 @@ def trades_loss(model,
     model.train()
 
     x_adv = Variable(torch.clamp(x_adv, 0.0, 1.0), requires_grad=False)
-    # zero gradient
+    
     optimizer.zero_grad()
-    # calculate robust loss
+    
     logits = model(x_natural)
     loss_natural = F.cross_entropy(logits, y)
     loss_robust = (1.0 / batch_size) * criterion_kl(F.log_softmax(model(x_adv), dim=1),
@@ -117,7 +117,7 @@ def trades_loss(model,
     return loss
 
 
-# 
+
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomResizedCrop(32, scale=(0.8, 1.2), ratio=(0.75, 1.33), interpolation=2),
@@ -142,7 +142,7 @@ class MatryoshkaModel(nn.Module):
 
         nest_list = [8, 16, 32, 64, 128, 256, 512]
         self.linear_layer = MRL_Linear_Layer(nesting_list=NESTING_LIST, num_classes=10, efficient=False)
-        # self.model = nn.Sequential(self.base_model, self.linear_layer)
+        
         self.init_linear()
 
     def forward(self, x):
@@ -152,7 +152,7 @@ class MatryoshkaModel(nn.Module):
         return nested_outputs
 
     def init_linear(self):
-        #use the same initialization as the original paper
+        
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight)
@@ -189,15 +189,15 @@ if __name__ == "__main__":
     parser.add_argument('--steps', type=list, default=[60, 120, 160, 2048])
     parser.add_argument('--num_nested_models', type=int, default=3, help="number of nested models")
     parser.add_argument('--relative_importance', type=float, default=0.1, help="relative importance of nested models")
-    #model name 
+    
     parser.add_argument('--model_name', type=str, default='ResNet18')
     args = parser.parse_args()
 
-    # Initialize wandb
+    
     wandb.init(project="m-model", config=args)
-    #get run name 
+    
     run_name = wandb.run.name
-    #if its cifar 10, dowload the dataset frst in data 
+    
     if args.dset == 'cifar10':
         
         torchvision.datasets.CIFAR10(root=args.data_dir, train=True, download=True)
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     model_name = args.net
 
     model_name = wandb.run.name
-    # model_name = model_name
+    
 
     root_dir = args.ckpt
     ckpt_dir = os.path.join(root_dir, 'ckpt')
@@ -219,41 +219,41 @@ if __name__ == "__main__":
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
     model_name = 'cifar10_pretrained_model_mrl_' + model_name + '.pt'
-    # MODEL_NAME = model_name
+    
     model_name = os.path.join(ckpt_dir, model_name)
-    # os.makedirs(ckpt_dir, exist_ok=True)
-    # import pdb ; pdb.set_trace()
+    
+    
 
 
-    # ckpt_path = os.path.join(args.ckpt, 'models', model_name + '_matryoshka.pt')
+    
 
-    # base_model = load_model(model_name).cuda()
+    
     model = MatryoshkaModel().cuda()
     
 
-    # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=2e-4)
-    # AdamW optimizer
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01)
+    
+    
+    
     optimizer = optim.SGD(model.parameters(), lr=0.1,
                       momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-    # l1 = [0.1]
-    # l1 = [0.1]
+    
+    
     l1 = args.relative_importance
     l1 = [l1]
     l1 = l1* len(NESTING_LIST)
     
     mrl_loss = Matryoshka_CE_Loss(relative_importance=l1)
 
-    # if args.scheduler == 'cosine':
-    #     # args.max_epoch = 200
-    #     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer,
-    #                                                            T_max=args.max_epoch)
-    # elif args.scheduler == 'multistep':
-    #     # args.max_epoch = 200
-    #     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=optimizer,
-    #                                                      milestones=args.steps,
-    #                                                      gamma=args.gamma)
+    
+    
+    
+    
+    
+    
+    
+    
+    
     CELOSS = nn.CrossEntropyLoss()
     model.train()
     max_acc = 0
@@ -299,13 +299,13 @@ if __name__ == "__main__":
 
         if max(acc_nested) > max_acc:
             max_acc = max(acc_nested)
-            # torch.save(model.state_dict(), ckpt_path)
+            
             model_name_epoch_wise = 'cifar10_mrl__epoch_' + str(epoch) + '.pt'
             ckpt_saver = os.path.join(ckpt_dir, model_name_epoch_wise)
             torch.save(model.state_dict(), ckpt_saver)
             print('Model saved!, path :', ckpt_saver)
-            # wandb.log({"best_model": wandb.Artifact(name="best_model", type="model")}, step=epoch)
-            #just save the iteration of best model 
+            
+            
             epoch_number = epoch
             wandb.log({"best_model": epoch_number}, step=epoch)
 

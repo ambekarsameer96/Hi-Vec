@@ -2,7 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 import os
-# --cfg cfgs/Online_TTA_os/
+
 import numpy as np
 from src.methods import setup_model
 from src.utils.utils import get_accuracy, merge_cfg_from_args, get_args
@@ -12,7 +12,7 @@ import wandb
 
 def validation(cfg):
     model = setup_model(cfg)
-    # get the test sequence containing the corruptions or domain names
+    
     dom_names_all = cfg.CORRUPTION.TYPE
     logger.info(f"Using the following domain sequence: {dom_names_all}")
     wandb.log({"domain_sequence": dom_names_all})
@@ -24,7 +24,7 @@ def validation(cfg):
     aucs = []
     h_scores = []
 
-    # start evaluation
+    
     for i_dom, domain_name in enumerate(dom_names_all):
         if cfg.MODEL.CONTINUAL == 'Fully':
             try:
@@ -36,7 +36,7 @@ def validation(cfg):
         elif cfg.MODEL.CONTINUAL == 'Continual':
             logger.warning("not resetting model")
 
-        # import pdb; pdb.set_trace()
+        
 
         for severity in severities:
             testset, test_loader = load_ood_dataset_test(cfg.DATA_DIR, cfg.CORRUPTION.ID_DATASET,
@@ -55,9 +55,9 @@ def validation(cfg):
             aucs.append(auc)
             h_scores.append(h_score)
             logger.info(
-                f"{cfg.CORRUPTION.ID_DATASET} with {cfg.CORRUPTION.OOD_DATASET} [#samples={len(testset)}][{domain_name}]"
+                f"{cfg.CORRUPTION.ID_DATASET} with {cfg.CORRUPTION.OOD_DATASET} [
                 f":acc: {acc:.2%}, auc: {auc:.2%}, h-score: {h_score:.2%}")
-            wandb.log({f"{cfg.CORRUPTION.ID_DATASET} with {cfg.CORRUPTION.OOD_DATASET} [#samples={len(testset)}][{domain_name}]" : {"acc": acc, "auc": auc, "h_score": h_score}})
+            wandb.log({f"{cfg.CORRUPTION.ID_DATASET} with {cfg.CORRUPTION.OOD_DATASET} [
 
         logger.info(f"mean acc: {np.mean(accs):.2%}, "
                     f"mean auc: {np.mean(aucs):.2%}, "
@@ -66,8 +66,8 @@ def validation(cfg):
         wandb.run.summary["mean_acc"] = np.mean(accs)
         wandb.run.summary["mean_auc"] = np.mean(aucs)
         wandb.run.summary["mean_h_score"] = np.mean(h_scores)
-        #log all the metrics
-        # wandb.log({"mean_acc": np.mean(accs), "mean_auc": np.mean(aucs), "mean_h_score": np.mean(h_scores)})
+        
+        
 
 
 if __name__ == "__main__":
@@ -76,16 +76,16 @@ if __name__ == "__main__":
     args.output_dir = args.output_dir if args.output_dir else 'evaluation_os'
     wandb.init(project='sta-tta_adaptation', entity='exps')
     wandb.config.update(args)
-    # args.output_dir = args.output_dir if args.output_dir else 'evaluation'
-    # args.output_dir = './output' 
+    
+    
     wandb_run_name = wandb.run.name
-    #let output dir be the wandb run name
-    # args.output_dir = wandb_run_name
+    
+    
     wandb_run_name = os.path.join('./output_logs', wandb_run_name)
     args.output_dir = wandb_run_name
 
     os.makedirs(args.output_dir, exist_ok=True)
-    #update the output dir in the config
+    
     cfg.OUTPUT_DIR = args.output_dir
     wandb.config.update(cfg)
     load_cfg_fom_args(args.cfg, args.output_dir)
