@@ -21,7 +21,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.optim as optim
 from mrl import MRL_Linear_Layer, Matryoshka_CE_Loss
-import wandb
 from aug import * 
 
 
@@ -116,8 +115,6 @@ def trades_loss(model,
     loss = loss_natural + beta * loss_robust
     return loss
 
-
-
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomResizedCrop(32, scale=(0.8, 1.2), ratio=(0.75, 1.33), interpolation=2),
@@ -193,10 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_name', type=str, default='ResNet18')
     args = parser.parse_args()
 
-    
-    wandb.init(project="m-model", config=args)
-    
-    run_name = wandb.run.name
+    run_name = './models_cifar_train'
     
     if args.dset == 'cifar10':
         
@@ -210,7 +204,7 @@ if __name__ == "__main__":
 
     model_name = args.net
 
-    model_name = wandb.run.name
+    model_name = run_name
     
 
     root_dir = args.ckpt
@@ -222,22 +216,11 @@ if __name__ == "__main__":
     
     model_name = os.path.join(ckpt_dir, model_name)
     
-    
-
-
-    
-
-    
     model = MatryoshkaModel().cuda()
-    
-
-    
-    
     
     optimizer = optim.SGD(model.parameters(), lr=0.1,
                       momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-    
     
     l1 = args.relative_importance
     l1 = [l1]
@@ -245,15 +228,6 @@ if __name__ == "__main__":
     
     mrl_loss = Matryoshka_CE_Loss(relative_importance=l1)
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
     CELOSS = nn.CrossEntropyLoss()
     model.train()
     max_acc = 0
@@ -276,7 +250,6 @@ if __name__ == "__main__":
                 print('epoch:%d,iter:%d,loss:%.4f' % (epoch, i, loss.item()))
         
         avg_train_loss = train_loss / len(train_loader)
-        wandb.log({"train_loss": avg_train_loss}, step=epoch)
 
         model.eval()
         acc_nested = [0] * len(NESTING_LIST)
@@ -294,7 +267,6 @@ if __name__ == "__main__":
         print('epoch:%d' % epoch)
         for i, acc in enumerate(acc_nested):
             print(f'\t Accuracy of nested model {i}: nesting size: {NESTING_LIST[i]}: Accuracy {acc}')
-            wandb.log({f"accuracy_nested_{NESTING_LIST[i]}": acc}, step=epoch)
         print('\n')            
 
         if max(acc_nested) > max_acc:
@@ -307,8 +279,6 @@ if __name__ == "__main__":
             
             
             epoch_number = epoch
-            wandb.log({"best_model": epoch_number}, step=epoch)
-
         scheduler.step()
 
-    wandb.finish()
+
